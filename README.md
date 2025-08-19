@@ -26,6 +26,8 @@ services:
       POSTGRES_DATABASE: dbname
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+      LOCAL_STORE_PREFIX: /backup
+      COMPRESS: 'true'
 ```
 
 - Images are tagged by the major PostgreSQL version supported: `12`, `13`, `14`, `15` or `16`.
