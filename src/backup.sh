@@ -5,6 +5,8 @@ set -o pipefail
 
 source ./env.sh
 
+file_path="${LOCAL_STORE_PREFIX}/db.dump"
+
 echo "Creating backup of $POSTGRES_DATABASE database..."
 pg_dump --format=custom \
         -h $POSTGRES_HOST \
@@ -12,20 +14,27 @@ pg_dump --format=custom \
         -U $POSTGRES_USER \
         -d $POSTGRES_DATABASE \
         $PGDUMP_EXTRA_OPTS \
-        > db.dump
+        > "$file_path"
 
 timestamp=$(date +"%Y-%m-%dT%H:%M:%S")
 s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}/${POSTGRES_DATABASE}_${timestamp}.dump"
 
+if [ -n "$COMPRESS" ]; then
+  echo "Compressing backup..."
+  zstd -2 "$file_path"
+  file_path="${file_path}.zst"
+  s3_uri_base="${s3_uri_base}.zst"
+fi
+
 if [ -n "$PASSPHRASE" ]; then
   echo "Encrypting backup..."
-  rm -f db.dump.gpg
-  gpg --symmetric --batch --passphrase "$PASSPHRASE" db.dump
-  rm db.dump
-  local_file="db.dump.gpg"
+  rm -f "$file_path.gpg"
+  gpg --symmetric --batch --passphrase "$PASSPHRASE" "$file_path"
+  rm "$file_path"
+  local_file="$file_path.gpg"
   s3_uri="${s3_uri_base}.gpg"
 else
-  local_file="db.dump"
+  local_file="$file_path"
   s3_uri="$s3_uri_base"
 fi
 

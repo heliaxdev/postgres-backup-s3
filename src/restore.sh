@@ -26,19 +26,27 @@ else
   )
 fi
 
+file_path="${LOCAL_STORE_PREFIX}/db${file_type}"
+
 echo "Fetching backup from S3..."
-aws $aws_args s3 cp "${s3_uri_base}/${key_suffix}" "db${file_type}"
+aws $aws_args s3 cp "${s3_uri_base}/${key_suffix}" "$file_path"
 
 if [ -n "$PASSPHRASE" ]; then
   echo "Decrypting backup..."
-  gpg --decrypt --batch --passphrase "$PASSPHRASE" db.dump.gpg > db.dump
-  rm db.dump.gpg
+  gpg --decrypt --batch --passphrase "$PASSPHRASE" "$file_path.gpg" > "${LOCAL_STORE_PREFIX}/db.dump"
+  rm "$file_path.gpg"
+fi
+
+if [ -n "$COMPRESS" ]; then
+  echo "Decompressing backup..."
+  zstd -d "${LOCAL_STORE_PREFIX}/db.dump.zst" -o "${LOCAL_STORE_PREFIX}/db.dump"
+  rm "${LOCAL_STORE_PREFIX}/db.dump.zst"
 fi
 
 conn_opts="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE"
 
 echo "Restoring from backup..."
-pg_restore $conn_opts --clean --if-exists db.dump
+pg_restore $conn_opts --clean --if-exists "${LOCAL_STORE_PREFIX}/db.dump"
 rm db.dump
 
 echo "Restore complete."

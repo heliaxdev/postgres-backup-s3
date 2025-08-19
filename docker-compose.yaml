@@ -26,3 +26,5 @@ services:
       POSTGRES_DATABASE: postgres
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+      COMPRESS: 'true'  # optional, set to 'true' to enable compression
+      LOCAL_STORE_PREFIX: /data/backups  # optional, local storage prefix for backups
