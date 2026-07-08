@@ -23,7 +23,7 @@ services:
       S3_BUCKET: my-bucket
       S3_PREFIX: backup
       POSTGRES_HOST: postgres
-      POSTGRES_DATABASE: dbname
+      POSTGRES_DATABASE: dbname  # single, comma/space-separated list, or "all"
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       LOCAL_STORE_PREFIX: /backup
@@ -33,6 +33,7 @@ services:
 - Images are tagged by the major PostgreSQL version supported: `12`, `13`, `14`, `15` or `16`.
 - The `SCHEDULE` variable determines backup frequency. See go-cron schedules documentation [here](http://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules). Omit to run the backup immediately and then exit.
 - If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
+- `POSTGRES_DATABASE` accepts a single database, a comma- or space-separated list (e.g. `db1,db2`), or `all` to back up every non-template database on the server. Each database is dumped, uploaded, and pruned independently; all databases in a run share one timestamp.
 - Run `docker exec <container name> sh backup.sh` to trigger a backup ad-hoc.
 - If `BACKUP_KEEP_DAYS` is set, backups older than this many days will be deleted from S3.
 - Set `S3_ENDPOINT` if you're using a non-AWS S3-compatible storage provider.
@@ -84,6 +85,7 @@ These changes would have been difficult or impossible merge into @schickling's r
   - backup blobs and all schemas by default
   - no Python 2 dependencies
   - filter backups on S3 by database name
+  - back up multiple databases in one run (list or `all`)
   - support encrypted (password-protected) backups
   - support for restoring from a specific backup by timestamp
   - support for auto-removal of old backups
