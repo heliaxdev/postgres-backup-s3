@@ -20,12 +20,13 @@ databases=$(echo "$POSTGRES_DATABASE" | tr ',' ' ')
 
 if [ "$databases" = "all" ]; then
   echo "Discovering databases on $POSTGRES_HOST..."
-  databases=$(psql --format=unaligned --tuples-only \
+  # rdsadmin is RDS-internal and rejects connections.
+  databases=$(psql --no-align --tuples-only \
       -h "$POSTGRES_HOST" \
       -p "$POSTGRES_PORT" \
       -U "$POSTGRES_USER" \
       -d postgres \
-      -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname <> 'postgres';")
+      -c "SELECT datname FROM pg_database WHERE NOT datistemplate AND datallowconn AND datname NOT IN ('postgres', 'rdsadmin');")
 fi
 
 # One timestamp for the whole run so every database in this run shares it.
